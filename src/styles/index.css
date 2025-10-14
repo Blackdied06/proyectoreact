@@ -1,0 +1,55 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root{
+  --bg-light: #f7fafc;
+  --bg-dark: #0b1220; /* slightly darker */
+  --text-dark: #0f1724;
+  --text-light: #111827;
+  --muted: #94a3b8;
+}
+
+body{font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial}
+
+.bg-soft{background-color:var(--bg-light)}
+.card-bg{background-color:var(--card, #ffffff)}
+
+/* Dark mode adjustments to improve contrast */
+.dark{ color-scheme: dark; }
+.dark .text-gray-200{ color: #e6eef8; }
+.dark .text-gray-500{ color: #9aa6b2; }
+.dark .text-gray-600{ color: #9aa6b2; }
+.dark .bg-white{ background-color: #0b1726; }
+.dark .bg-background-dark{ background-color: var(--bg-dark); }
+.dark .bg-background-light{ background-color: var(--bg-dark); }
+.dark .border-gray-200{ border-color: #10202e; }
+
+/* Utility for primary color used in components */
+.bg-primary{ background-color: #0ea5a0 }
+.text-primary{ color: #0ea5a0 }
+
+/* ----- Accessible text selection (light & dark) ----- */
+::selection { background-color: #0ea5a0; color: #ffffff; }
+::-moz-selection { background-color: #0ea5a0; color: #ffffff; }
+.dark ::selection { background-color: #334155; color: #e5e7eb; } /* slate-700 bg, gray-200 text */
+.dark ::-moz-selection { background-color: #334155; color: #e5e7eb; }
+
+/* ----- Forms in dark mode: ensure readable inputs ----- */
+.dark input,
+.dark select,
+.dark textarea { 
+  background-color: #0f172a; /* slate-900-ish */
+  color: #e5e7eb; /* gray-200 */
+  border-color: #334155; /* slate-700 */
+  caret-color: #e5e7eb;
+}
+.dark input::placeholder,
+.dark textarea::placeholder { color: #94a3b8; } /* slate-400 */
+.dark input:disabled,
+.dark select:disabled,
+.dark textarea:disabled { opacity: .7; }
+
+/* Buttons subtle hover on dark backgrounds when using gray hovers */
+.dark .hover\:bg-gray-50:hover { background-color: rgba(255,255,255,0.06) !important; }
+.dark .bg-gray-100 { background-color: rgba(255,255,255,0.08) !important; }
