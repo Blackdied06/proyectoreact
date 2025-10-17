@@ -6,11 +6,12 @@ import Topbar from './components/Topbar'
 import Dashboard from './views/Dashboard'
 import Products from './views/Products'
 import Suppliers from './views/Suppliers'
+import Categories from './views/Categories'
 import Reports from './views/Reports'
 import Sales from './views/Sales'
 import Users from './views/Users'
 import Login from './views/Login'
-import { Routes, Route, useNavigate, Navigate } from 'react-router-dom'
+import { Routes, Route, useNavigate, Navigate, useLocation } from 'react-router-dom'
 import Modal from './components/Modal'
 import ConfirmModal from './components/ConfirmModal'
 import { loadProducts, saveProducts } from './lib/storage'
@@ -34,11 +35,24 @@ function App(){
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
 
   useEffect(()=>{
-    const data = loadProducts()
-    setProducts(data)
+    async function load(){
+      const token = localStorage.getItem('stockpilot_token')
+      if(token){
+        try{
+          const res = await fetch('http://localhost:4000/api/products')
+          const data = await res.json()
+          setProducts(data)
+          return
+        }catch(e){ console.error('Error cargando productos desde API', e) }
+      }
+      const data = loadProducts()
+      setProducts(data)
+    }
+    load()
   }, [])
 
   const navigate = useNavigate()
+  const location = useLocation()
 
   useEffect(()=>{
     saveProducts(products)
@@ -51,14 +65,33 @@ function App(){
   }, [])
 
   function handleSaveProduct(prod){
-    if(prod.id){
-      setProducts(prev => prev.map(p => p.id === prod.id ? prod : p))
-    } else {
-      prod.id = Date.now().toString()
-      setProducts(prev => [prod, ...prev])
-    }
-    setModalOpen(false)
-    setProductToEdit(null)
+    (async () => {
+      try{
+        if(prod.id && String(prod.id).match(/^\d+$/)){
+          // existing server id -> update via PUT
+          const res = await fetch(`http://localhost:4000/api/products/${prod.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(prod) })
+          const updated = await res.json()
+          setProducts(prev => prev.map(p => p.id === updated.id ? updated : p))
+        } else {
+          // create new
+          const res = await fetch('http://localhost:4000/api/products', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(prod) })
+          const created = await res.json()
+          setProducts(prev => [created, ...prev])
+        }
+      }catch(e){
+        console.error('Error guardando producto', e)
+        // fallback local
+        if(prod.id){
+          setProducts(prev => prev.map(p => p.id === prod.id ? prod : p))
+        } else {
+          prod.id = Date.now().toString()
+          setProducts(prev => [prod, ...prev])
+        }
+      } finally {
+        setModalOpen(false)
+        setProductToEdit(null)
+      }
+    })()
   }
 
   function handleDeleteProduct(id){
@@ -69,9 +102,21 @@ function App(){
 
   function confirmDelete(){
     if(!toDeleteId) return
-    setProducts(prev => prev.filter(p => p.id !== toDeleteId))
-    setToDeleteId(null)
-    setConfirmOpen(false)
+    (async ()=>{
+      try{
+        // attempt server delete
+        const res = await fetch(`http://localhost:4000/api/products/${toDeleteId}`, { method: 'DELETE' })
+        if(!res.ok) throw new Error('Server delete failed')
+        setProducts(prev => prev.filter(p => p.id !== toDeleteId))
+      }catch(e){
+        console.error('Error eliminando en servidor, eliminando localmente', e)
+        // fallback local
+        setProducts(prev => prev.filter(p => p.id !== toDeleteId))
+      } finally {
+        setToDeleteId(null)
+        setConfirmOpen(false)
+      }
+    })()
   }
 
   function cancelDelete(){
@@ -96,15 +141,20 @@ function App(){
   return (
     <div className="min-h-screen bg-background-light dark:bg-background-dark text-gray-800 dark:text-gray-100">
       <div className="flex">
-  <Sidebar onNavigate={(v)=>{ setView(v); setMobileSidebarOpen(false) }} isOpen={mobileSidebarOpen} onClose={()=>setMobileSidebarOpen(false)} onToggleTheme={()=>setDark(d=>!d)} onLogout={()=>{ localStorage.removeItem('stockpilot_token'); navigate('/login') }} />
+        {location.pathname !== '/login' && (
+          <Sidebar onNavigate={(v)=>{ setView(v); setMobileSidebarOpen(false) }} isOpen={mobileSidebarOpen} onClose={()=>setMobileSidebarOpen(false)} onToggleTheme={()=>setDark(d=>!d)} onLogout={()=>{ localStorage.removeItem('stockpilot_token'); navigate('/login') }} />
+        )}
         <div className="flex-1">
-          <Topbar onOpenModal={()=>setModalOpen(true)} onSearch={(q)=>setSearchQuery(q)} onToggleTheme={()=>setDark(d=>!d)} onToggleSidebar={()=>setMobileSidebarOpen(s=>!s)} />
+          {location.pathname !== '/login' && (
+            <Topbar onOpenModal={()=>setModalOpen(true)} onSearch={(q)=>setSearchQuery(q)} onToggleTheme={()=>setDark(d=>!d)} onToggleSidebar={()=>setMobileSidebarOpen(s=>!s)} />
+          )}
           <main className="p-6">
             <Routes>
               <Route path="/login" element={<Login/>} />
               <Route path="/dashboard" element={<ProtectedRoute><Dashboard/></ProtectedRoute>} />
               <Route path="/products" element={<ProtectedRoute><Products products={products} onOpenModal={()=>setModalOpen(true)} onEdit={handleEditRequest} onDelete={handleDeleteProduct} searchQuery={searchQuery} /></ProtectedRoute>} />
               <Route path="/suppliers" element={<ProtectedRoute><Suppliers/></ProtectedRoute>} />
+              <Route path="/categories" element={<ProtectedRoute><Categories/></ProtectedRoute>} />
               <Route path="/purchases" element={<ProtectedRoute><div>Compras</div></ProtectedRoute>} />
               <Route path="/sales" element={<ProtectedRoute><Sales/></ProtectedRoute>} />
               <Route path="/reports" element={<ProtectedRoute><Reports/></ProtectedRoute>} />

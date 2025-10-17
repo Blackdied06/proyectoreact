@@ -2,19 +2,38 @@ import React, { useEffect, useState } from 'react'
 
 export default function Modal({open, onClose, title, product, onSave}){
   const [form, setForm] = useState({
-    name: '', sku: '', category: '', price: '', quantity: '', supplier: '', expires: ''
+    name: '', sku: '', category: '', price: '', quantity: '', supplier: '', expires: '', stock_minimo: ''
   })
   const [errors, setErrors] = useState({})
+  const [categories, setCategories] = useState([])
 
   useEffect(()=>{
     if(product){
       setForm({
-        name: product.name || '', sku: product.sku || '', category: product.category || '', price: product.price || '', quantity: product.quantity || '', supplier: product.supplier || '', expires: product.expires || ''
+        name: product.name || '', sku: product.sku || '', category: product.category || '', price: product.price || '', quantity: product.quantity || '', supplier: product.supplier || '', expires: product.expires || '', stock_minimo: product.stock_minimo || ''
       })
     } else {
-      setForm({ name: '', sku: '', category: '', price: '', quantity: '', supplier: '', expires: '' })
+      setForm({ name: '', sku: '', category: '', price: '', quantity: '', supplier: '', expires: '', stock_minimo: '' })
     }
   }, [product, open])
+
+  useEffect(()=>{
+    fetch('http://localhost:4000/api/categories')
+      .then(r=>r.json())
+      .then(data=>setCategories(data || []))
+      .catch(()=>setCategories([]))
+  }, [])
+
+  useEffect(()=>{
+    function handler(){
+      fetch('http://localhost:4000/api/categories')
+        .then(r=>r.json())
+        .then(data=>setCategories(data || []))
+        .catch(()=>{})
+    }
+    window.addEventListener('categories-updated', handler)
+    return ()=> window.removeEventListener('categories-updated', handler)
+  }, [])
 
   if(!open) return null
 
@@ -62,7 +81,10 @@ export default function Modal({open, onClose, title, product, onSave}){
             <input value={form.sku} onChange={(e)=>update('sku', e.target.value)} placeholder="SKU" className="form-input rounded border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-400 px-3 py-2" />
             {errors.sku && <p className="text-xs text-red-500 mt-1">{errors.sku}</p>}
           </div>
-          <select value={form.category} onChange={(e)=>update('category', e.target.value)} className="form-select rounded border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-800 dark:text-gray-100 px-3 py-2"><option value="">Categoría</option><option>Medicamentos</option><option>Herramientas</option><option>Accesorios</option></select>
+          <input list="category-list" value={form.category} onChange={(e)=>update('category', e.target.value)} placeholder="Categoría" className="form-input rounded border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-400 px-3 py-2" />
+          <datalist id="category-list">
+            {categories.map(c => <option key={c.id} value={c.nombre}>{c.parent_name ? `${c.nombre} (${c.parent_name})` : c.nombre}</option>)}
+          </datalist>
           <div>
             <input value={form.price} onChange={(e)=>update('price', e.target.value)} placeholder="Precio" className="form-input rounded border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-400 px-3 py-2" />
             {errors.price && <p className="text-xs text-red-500 mt-1">{errors.price}</p>}
@@ -71,6 +93,12 @@ export default function Modal({open, onClose, title, product, onSave}){
             <input value={form.quantity} onChange={(e)=>update('quantity', e.target.value)} placeholder="Cantidad" className="form-input rounded border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-400 px-3 py-2" />
             {errors.quantity && <p className="text-xs text-red-500 mt-1">{errors.quantity}</p>}
           </div>
+          {/* Mostrar stock_minimo solo al crear (product === null) */}
+          {!product && (
+            <div>
+              <input value={form.stock_minimo} onChange={(e)=>update('stock_minimo', e.target.value)} placeholder="Stock mínimo" className="form-input rounded border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-400 px-3 py-2" />
+            </div>
+          )}
           <input value={form.supplier} onChange={(e)=>update('supplier', e.target.value)} placeholder="Proveedor" className="form-input rounded border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-400 px-3 py-2" />
           <input value={form.expires} onChange={(e)=>update('expires', e.target.value)} type="date" placeholder="Fecha de vencimiento" className="form-input rounded border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-400 px-3 py-2 col-span-2" />
           <div className="col-span-2 flex justify-end gap-2">

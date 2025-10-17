@@ -7,7 +7,7 @@ export default function Users(){
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Usuarios y roles</h2>
         <div className="text-sm text-gray-500">Roles: Administrador · Vendedor · Auditor</div>
       </div>
-      <div className="rounded-lg bg-white dark:bg-background-dark/50 p-4 shadow">
+      <div className="rounded-lg bg-white dark:bg-slate-800 p-4 shadow">
         <table className="w-full text-sm">
           <thead className="text-left text-gray-500 text-xs uppercase">
             <tr><th className="px-3 py-2">Usuario</th><th className="px-3 py-2">Rol</th><th className="px-3 py-2">Última actividad</th></tr>
