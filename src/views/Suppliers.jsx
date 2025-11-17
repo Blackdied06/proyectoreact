@@ -10,9 +10,9 @@ export default function Suppliers(){
   async function load(){
     setLoading(true)
     try{
-      const r = await fetch('http://localhost:4000/api/suppliers')
+      const r = await fetch('/api/suppliers')
       const data = await r.json()
-      setSuppliers(data || [])
+      setSuppliers(Array.isArray(data) ? data : [])
     }catch(e){ console.error(e) }
     setLoading(false)
   }
@@ -22,12 +22,12 @@ export default function Suppliers(){
   async function save(){
     try{
       if(editing){
-        const r = await fetch(`http://localhost:4000/api/suppliers/${editing.id}`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ nombre: name, contacto: contact }) })
+        const r = await fetch(`/api/suppliers/${editing.id}`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ nombre: name, contacto: contact }) })
         const updated = await r.json()
         setSuppliers(prev => prev.map(s => s.id === updated.id ? updated : s))
         setEditing(null)
       } else {
-        const r = await fetch('http://localhost:4000/api/suppliers', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ nombre: name, contacto: contact }) })
+        const r = await fetch('/api/suppliers', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ nombre: name, contacto: contact }) })
         const created = await r.json()
         setSuppliers(prev => [created, ...prev])
       }
@@ -39,7 +39,7 @@ export default function Suppliers(){
   async function remove(id){
     if(!confirm('¿Eliminar proveedor?')) return
     try{
-      await fetch(`http://localhost:4000/api/suppliers/${id}`, { method: 'DELETE' })
+      await fetch(`/api/suppliers/${id}`, { method: 'DELETE' })
       setSuppliers(prev => prev.filter(s => s.id !== id))
     }catch(e){ console.error(e) }
   }

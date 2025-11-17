@@ -16,7 +16,7 @@ export function AuthProvider({ children }){
     try{
       if(user){
         localStorage.setItem('stockpilot_token', user.token || 'demo-token')
-        localStorage.setItem('stockpilot_user', JSON.stringify({ id: user.id, username: user.username }))
+        localStorage.setItem('stockpilot_user', JSON.stringify({ id: user.id, username: user.username, role_id: user.role_id || null, role_name: user.role_name || null }))
       } else {
         localStorage.removeItem('stockpilot_token')
         localStorage.removeItem('stockpilot_user')

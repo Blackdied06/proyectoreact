@@ -11,9 +11,9 @@ export default function Categories(){
   async function load(){
     setLoading(true)
     try{
-      const r = await fetch('http://localhost:4000/api/categories')
+      const r = await fetch('/api/categories')
       const data = await r.json()
-      setCategories(data || [])
+      setCategories(Array.isArray(data) ? data : [])
     }catch(e){ console.error(e) }
     setLoading(false)
   }
@@ -23,12 +23,12 @@ export default function Categories(){
   async function save(){
     try{
       if(editing){
-        const r = await fetch(`http://localhost:4000/api/categories/${editing.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nombre: name, parent_id: parent || null }) })
+        const r = await fetch(`/api/categories/${editing.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nombre: name, parent_id: parent || null }) })
         const updated = await r.json()
         setCategories(prev => prev.map(c => c.id === updated.id ? updated : c))
         setEditing(null)
       } else {
-        const r = await fetch('http://localhost:4000/api/categories', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nombre: name, parent_id: parent || null }) })
+        const r = await fetch('/api/categories', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nombre: name, parent_id: parent || null }) })
         const created = await r.json()
         setCategories(prev => [created, ...prev])
         window.dispatchEvent(new Event('categories-updated'))
@@ -41,7 +41,7 @@ export default function Categories(){
   async function remove(id){
     if(!confirm('¿Eliminar categoría?')) return
     try{
-      await fetch(`http://localhost:4000/api/categories/${id}`, { method: 'DELETE' })
+      await fetch(`/api/categories/${id}`, { method: 'DELETE' })
       setCategories(prev => prev.filter(c => c.id !== id))
       window.dispatchEvent(new Event('categories-updated'))
     }catch(e){ console.error(e) }

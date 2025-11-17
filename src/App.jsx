@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { AuthProvider, useAuth } from './lib/auth.jsx'
+import ErrorBoundary from './components/ErrorBoundary'
 import ProtectedRoute from './components/ProtectedRoute'
 import Sidebar from './components/Sidebar'
 import Topbar from './components/Topbar'
@@ -9,6 +10,7 @@ import Suppliers from './views/Suppliers'
 import Categories from './views/Categories'
 import Reports from './views/Reports'
 import Sales from './views/Sales'
+import Purchases from './views/Purchases'
 import Users from './views/Users'
 import Login from './views/Login'
 import { Routes, Route, useNavigate, Navigate, useLocation } from 'react-router-dom'
@@ -39,14 +41,15 @@ function App(){
       const token = localStorage.getItem('stockpilot_token')
       if(token){
         try{
-          const res = await fetch('http://localhost:4000/api/products')
+          const base = (location.hostname === 'localhost' ? '' : (import.meta.env.VITE_API_URL || 'http://localhost:4000'))
+          const res = await fetch(base + '/api/products')
           const data = await res.json()
-          setProducts(data)
+          setProducts(Array.isArray(data) ? data : [])
           return
         }catch(e){ console.error('Error cargando productos desde API', e) }
       }
       const data = loadProducts()
-      setProducts(data)
+      setProducts(Array.isArray(data) ? data : [])
     }
     load()
   }, [])
@@ -69,12 +72,14 @@ function App(){
       try{
         if(prod.id && String(prod.id).match(/^\d+$/)){
           // existing server id -> update via PUT
-          const res = await fetch(`http://localhost:4000/api/products/${prod.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(prod) })
+          const base = (location.hostname === 'localhost' ? '' : (import.meta.env.VITE_API_URL || 'http://localhost:4000'))
+          const res = await fetch(`${base}/api/products/${prod.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(prod) })
           const updated = await res.json()
           setProducts(prev => prev.map(p => p.id === updated.id ? updated : p))
         } else {
           // create new
-          const res = await fetch('http://localhost:4000/api/products', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(prod) })
+          const base = (location.hostname === 'localhost' ? '' : (import.meta.env.VITE_API_URL || 'http://localhost:4000'))
+          const res = await fetch(base + '/api/products', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(prod) })
           const created = await res.json()
           setProducts(prev => [created, ...prev])
         }
@@ -105,7 +110,8 @@ function App(){
     (async ()=>{
       try{
         // attempt server delete
-        const res = await fetch(`http://localhost:4000/api/products/${toDeleteId}`, { method: 'DELETE' })
+        const base = (location.hostname === 'localhost' ? '' : (import.meta.env.VITE_API_URL || 'http://localhost:4000'))
+        const res = await fetch(`${base}/api/products/${toDeleteId}`, { method: 'DELETE' })
         if(!res.ok) throw new Error('Server delete failed')
         setProducts(prev => prev.filter(p => p.id !== toDeleteId))
       }catch(e){
@@ -149,18 +155,20 @@ function App(){
             <Topbar onOpenModal={()=>setModalOpen(true)} onSearch={(q)=>setSearchQuery(q)} onToggleTheme={()=>setDark(d=>!d)} onToggleSidebar={()=>setMobileSidebarOpen(s=>!s)} />
           )}
           <main className="p-6">
+            <ErrorBoundary>
             <Routes>
               <Route path="/login" element={<Login/>} />
               <Route path="/dashboard" element={<ProtectedRoute><Dashboard/></ProtectedRoute>} />
               <Route path="/products" element={<ProtectedRoute><Products products={products} onOpenModal={()=>setModalOpen(true)} onEdit={handleEditRequest} onDelete={handleDeleteProduct} searchQuery={searchQuery} /></ProtectedRoute>} />
               <Route path="/suppliers" element={<ProtectedRoute><Suppliers/></ProtectedRoute>} />
               <Route path="/categories" element={<ProtectedRoute><Categories/></ProtectedRoute>} />
-              <Route path="/purchases" element={<ProtectedRoute><div>Compras</div></ProtectedRoute>} />
+              <Route path="/purchases" element={<ProtectedRoute><Purchases/></ProtectedRoute>} />
               <Route path="/sales" element={<ProtectedRoute><Sales/></ProtectedRoute>} />
               <Route path="/reports" element={<ProtectedRoute><Reports/></ProtectedRoute>} />
               <Route path="/users" element={<ProtectedRoute><Users/></ProtectedRoute>} />
               <Route path="/" element={<Navigate to="/dashboard" />} />
             </Routes>
+            </ErrorBoundary>
           </main>
         </div>
       </div>

@@ -10,10 +10,11 @@
     "test": "jest --runInBand"
   },
   "dependencies": {
+    "@heroicons/react": "^2.0.18",
     "react": "latest",
     "react-dom": "latest",
-    "@heroicons/react": "^2.0.18",
-    "react-router-dom": "^6.14.1"
+    "react-router-dom": "^6.14.1",
+    "socket.io-client": "^4.8.1"
   },
   "devDependencies": {
     "@babel/core": "^7.22.0",

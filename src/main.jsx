@@ -11,3 +11,11 @@ createRoot(document.getElementById('root')).render(
     </BrowserRouter>
   </React.StrictMode>
 )
+
+// Global error handlers for runtime problems that could leave a blank screen
+window.addEventListener('error', (e)=>{
+  console.error('Global error', e.error || e.message)
+})
+window.addEventListener('unhandledrejection', (e)=>{
+  console.error('Unhandled rejection', e.reason)
+})

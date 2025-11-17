@@ -2,27 +2,38 @@ import React, { useState, useEffect } from 'react'
 import CategoryModal from '../components/CategoryModal'
 
 export default function Products({ products = [], onOpenModal, onEdit, onDelete, searchQuery = '' }) {
-  const [filtered, setFiltered] = useState(products)
+  const [filtered, setFiltered] = useState(Array.isArray(products) ? products : [])
+  const [error, setError] = useState(null)
   const [catOpen, setCatOpen] = useState(false)
   const [loading, setLoading] = useState(false)
 
   // Si no se pasan productos por props, los cargamos desde la API
   useEffect(() => {
-    if (products && products.length > 0) return
+    if (Array.isArray(products) && products.length > 0) return
     setLoading(true)
-    fetch('http://localhost:4000/api/products')
-      .then(res => res.json())
-      .then(data => setFiltered(data))
-      .catch(err => console.error('Error cargando productos', err))
+    // usar proxy en dev: ruta relativa /api
+    fetch('/api/products')
+      .then(async res => {
+        if (!res.ok) throw new Error('HTTP ' + res.status)
+        const data = await res.json()
+        if (Array.isArray(data)) {
+          setFiltered(data)
+          setError(null)
+        } else {
+          setFiltered([])
+          setError('Respuesta inesperada del servidor de productos')
+        }
+      })
+      .catch(err => { console.error('Error cargando productos', err); setError('No se pudieron cargar los productos') })
       .finally(() => setLoading(false))
   }, [products])
 
   useEffect(() => {
     const q = (searchQuery || '').toLowerCase()
-    if (!q) setFiltered(products)
+    if (!q) setFiltered(Array.isArray(products) ? products : [])
     else
       setFiltered(
-        (products || []).filter(
+        (Array.isArray(products) ? products : []).filter(
           (p) =>
             (p.name || '').toLowerCase().includes(q) ||
             (p.sku || '').toLowerCase().includes(q) ||
@@ -31,7 +42,7 @@ export default function Products({ products = [], onOpenModal, onEdit, onDelete,
       )
   }, [products, searchQuery])
 
-  const list = filtered || []
+  const list = Array.isArray(filtered) ? filtered : []
   return (
     <section>
       <div className="flex items-center justify-between mb-4">
@@ -49,6 +60,9 @@ export default function Products({ products = [], onOpenModal, onEdit, onDelete,
       </div>
 
       <div className="rounded-lg bg-white dark:bg-slate-800 p-4 shadow">
+        {error && (
+          <div className="mb-3 p-2 text-sm rounded border border-red-200 bg-red-50 text-red-700 dark:border-red-700 dark:bg-red-900/30 dark:text-red-300">{error}</div>
+        )}
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 dark:bg-slate-800 text-gray-600 dark:text-gray-300 text-xs uppercase">

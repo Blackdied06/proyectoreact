@@ -1,6 +1,7 @@
 import React from 'react'
 import { NavLink } from 'react-router-dom'
 import { HomeIcon, ArchiveBoxIcon, Squares2X2Icon, UsersIcon, TruckIcon, CurrencyDollarIcon, ChartBarIcon, ArrowRightOnRectangleIcon, SunIcon } from '@heroicons/react/24/outline'
+import { useAuth } from '../lib/auth.jsx'
 
 const menuItems = [
   { to: '/dashboard', label: 'Dashboard', icon: HomeIcon },
@@ -14,6 +15,8 @@ const menuItems = [
 ]
 
 export default function Sidebar({onNavigate, isOpen=false, onClose, onToggleTheme, onLogout}){
+  const { user } = useAuth()
+  const isAdmin = (user?.role_name === 'admin') || (user?.role_id === 1)
   return (
     <>
       {/* Mobile drawer */}
@@ -36,7 +39,7 @@ export default function Sidebar({onNavigate, isOpen=false, onClose, onToggleThem
       </div>
       <nav className="flex-1">
         <ul className="space-y-1">
-          {menuItems.map(item=>{
+          {menuItems.filter(m=> (m.to !== '/users') || isAdmin).map(item=>{
             const Icon = item.icon
             return (
               <li key={item.to}>

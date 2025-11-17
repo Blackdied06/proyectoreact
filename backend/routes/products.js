@@ -8,8 +8,8 @@ router.get('/', async (req, res) => {
     const [rows] = await pool.query(`SELECT p.*, c.nombre AS categoria FROM productos p LEFT JOIN categorias c ON p.categoria_id = c.id ORDER BY p.id DESC`);
     res.json(rows);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Error al obtener productos' });
+    console.error('Error al obtener productos:', err.message, err.code);
+    res.status(500).json({ message: 'Error al obtener productos', error: err.message, code: err.code });
   }
 });
 
@@ -55,11 +55,15 @@ router.post('/', async (req, res) => {
       const updatedStockMinimo = (stock_minimo !== undefined && stock_minimo !== null) ? stock_minimo : prod.stock_minimo
       await pool.query('UPDATE productos SET sku = ?, categoria_id = ?, stock = ?, precio = ?, costo = ?, stock_minimo = ? WHERE id = ?', [sku || prod.sku, categoria_id || prod.categoria_id, newStock, precio || prod.precio, costo || prod.costo, updatedStockMinimo || 0, prod.id])
       const [rows] = await pool.query(`SELECT p.*, c.nombre AS categoria FROM productos p LEFT JOIN categorias c ON p.categoria_id = c.id WHERE p.id = ?`, [prod.id]);
+      const io = req.app.get('io');
+      if (io) { io.emit('product:updated', rows[0]); io.emit('metrics:update'); }
       return res.status(200).json(rows[0])
     }
 
     const [result] = await pool.query('INSERT INTO productos (nombre, sku, categoria_id, stock, precio, costo, stock_minimo) VALUES (?, ?, ?, ?, ?, ?, ?)', [nombre, sku, categoria_id || null, stock || 0, precio || 0, costo || 0, stock_minimo || 0]);
     const [rows] = await pool.query(`SELECT p.*, c.nombre AS categoria FROM productos p LEFT JOIN categorias c ON p.categoria_id = c.id WHERE p.id = ?`, [result.insertId]);
+    const io = req.app.get('io');
+    if (io) { io.emit('product:created', rows[0]); io.emit('metrics:update'); }
     res.status(201).json(rows[0]);
   } catch (err) {
     console.error(err);
@@ -88,6 +92,8 @@ router.put('/:id', async (req, res) => {
 
     await pool.query('UPDATE productos SET nombre=?, sku=?, categoria_id=?, stock=?, precio=?, costo=?, stock_minimo=? WHERE id=?', [nombre, sku, categoria_id || null, stock || 0, precio || 0, costo || 0, stock_minimo || 0, id]);
     const [rows] = await pool.query(`SELECT p.*, c.nombre AS categoria FROM productos p LEFT JOIN categorias c ON p.categoria_id = c.id WHERE p.id = ?`, [id]);
+    const io = req.app.get('io');
+    if (io) { io.emit('product:updated', rows[0]); io.emit('metrics:update'); }
     res.json(rows[0]);
   } catch (err) {
     console.error(err);
@@ -100,6 +106,8 @@ router.delete('/:id', async (req, res) => {
   const { id } = req.params;
   try {
     await pool.query('DELETE FROM productos WHERE id = ?', [id]);
+    const io = req.app.get('io');
+    if (io) { io.emit('product:deleted', { id }); io.emit('metrics:update'); }
     res.json({ message: 'Producto eliminado' });
   } catch (err) {
     console.error(err);
